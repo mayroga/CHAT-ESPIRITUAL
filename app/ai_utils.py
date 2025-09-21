@@ -4,6 +4,7 @@ import openai
 from langdetect import detect
 
 openai.api_key = os.environ.get("OPENAI_API_KEY")  # secreto en Render
+
 TTS_CACHE_DIR = "/tmp/tts_cache"
 os.makedirs(TTS_CACHE_DIR, exist_ok=True)
 
