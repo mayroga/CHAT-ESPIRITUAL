@@ -23,14 +23,16 @@
 
   <div class="mb-6">
     <h2 class="text-xl font-bold mb-2">Apoya el proyecto</h2>
-    <input type="number" id="donation-amount" class="border p-2 w-full mb-2" placeholder="Cantidad en USD">
+    <p class="text-sm mb-2">Tu donación ayuda a pagar salarios, mantener el servicio y permitir que otros puedan usarlo.</p>
+    <input type="number" id="donation-amount" class="border p-2 w-full mb-2" placeholder="Cantidad en USD (mínimo $5)">
     <button id="donate-btn" class="bg-green-500 text-white px-4 py-2 rounded">Donar</button>
   </div>
 </div>
 
 <script type="module">
 import ChatComponent from './static/js/ChatComponent.jsx';
-const apiUrl = 'https://chat-espiritual.onrender.com'; // ✅ Tu URL de Render
+
+const apiUrl = 'https://chat-espiritual.onrender.com';
 
 // Chat
 const root = document.getElementById("chat-root");
@@ -72,10 +74,11 @@ sendBtn.onclick = async () => {
 
 loadIntentions();
 
-// Donaciones Stripe
+// Donaciones
 const donateBtn = document.getElementById("donate-btn");
 donateBtn.onclick = async () => {
-  const amount = parseInt(document.getElementById("donation-amount").value * 100) || 100;
+  let amount = parseInt(document.getElementById("donation-amount").value);
+  if(!amount || amount < 5) amount = 5;
   const res = await fetch(apiUrl + "/create-donation-session", {
     method:"POST",
     headers:{"Content-Type":"application/json"},
