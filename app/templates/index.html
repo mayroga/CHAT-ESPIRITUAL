@@ -30,13 +30,15 @@
 
 <script type="module">
 import ChatComponent from './static/js/ChatComponent.jsx';
-const apiUrl = '';
+const apiUrl = 'https://chat-espiritual.onrender.com'; // ✅ Tu URL de Render
 
+// Chat
 const root = document.getElementById("chat-root");
 const chatEl = document.createElement("div");
 root.appendChild(chatEl);
 new ChatComponent({ apiUrl }).mount(chatEl);
 
+// Intenciones
 const intentionInput = document.getElementById("intention-input");
 const sendBtn = document.getElementById("send-intention");
 const intentionsList = document.getElementById("intentions-list");
@@ -70,6 +72,7 @@ sendBtn.onclick = async () => {
 
 loadIntentions();
 
+// Donaciones Stripe
 const donateBtn = document.getElementById("donate-btn");
 donateBtn.onclick = async () => {
   const amount = parseInt(document.getElementById("donation-amount").value * 100) || 100;
