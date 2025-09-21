@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hablar con Dios</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://js.stripe.com/v3/"></script>
+</head>
+<body class="bg-gray-100 p-4">
+
+<div class="max-w-3xl mx-auto">
+  <h1 class="text-3xl font-bold mb-4 text-center">Hablar con Dios</h1>
+
+  <div id="chat-root" class="mb-6"></div>
+
+  <div class="mb-6">
+    <h2 class="text-xl font-bold mb-2">Comunidad de Intenciones</h2>
+    <textarea id="intention-input" class="border p-2 w-full mb-2" placeholder="Escribe tu intención..."></textarea>
+    <button id="send-intention" class="bg-blue-500 text-white px-4 py-2 rounded">Enviar intención</button>
+    <div id="intentions-list" class="mt-4"></div>
+  </div>
+
+  <div class="mb-6">
+    <h2 class="text-xl font-bold mb-2">Apoya el proyecto</h2>
+    <input type="number" id="donation-amount" class="border p-2 w-full mb-2" placeholder="Cantidad en USD">
+    <button id="donate-btn" class="bg-green-500 text-white px-4 py-2 rounded">Donar</button>
+  </div>
+</div>
+
+<script type="module">
+import ChatComponent from './static/js/ChatComponent.jsx';
+const apiUrl = '';
+
+const root = document.getElementById("chat-root");
+const chatEl = document.createElement("div");
+root.appendChild(chatEl);
+new ChatComponent({ apiUrl }).mount(chatEl);
+
+const intentionInput = document.getElementById("intention-input");
+const sendBtn = document.getElementById("send-intention");
+const intentionsList = document.getElementById("intentions-list");
+
+async function loadIntentions() {
+  const res = await fetch(apiUrl + "/intentions");
+  const data = await res.json();
+  intentionsList.innerHTML = data.map(i => `
+    <div class="p-2 border-b flex justify-between items-center">
+      <span>${i.text} (${i.amen_count} 🙏)</span>
+      <button onclick="sendAmen(${i.id})" class="bg-yellow-500 px-2 py-1 rounded text-white">Amén</button>
+    </div>`).join("");
+}
+
+window.sendAmen = async (id) => {
+  await fetch(apiUrl + `/intention/${id}/amen`, { method:"POST" });
+  loadIntentions();
+}
+
+sendBtn.onclick = async () => {
+  const text = intentionInput.value.trim();
+  if(!text) return;
+  await fetch(apiUrl + "/intention", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({ text })
+  });
+  intentionInput.value = "";
+  loadIntentions();
+}
+
+loadIntentions();
+
+const donateBtn = document.getElementById("donate-btn");
+donateBtn.onclick = async () => {
+  const amount = parseInt(document.getElementById("donation-amount").value * 100) || 100;
+  const res = await fetch(apiUrl + "/create-donation-session", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({ amount })
+  });
+  const data = await res.json();
+  if(data.url) window.location.href = data.url;
+}
+</script>
+</body>
+</html>
