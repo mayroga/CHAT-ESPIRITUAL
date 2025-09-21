@@ -4,23 +4,26 @@ from flask_cors import CORS
 from .models import db, Message, Intention, User
 from .ai_utils import detect_lang, check_moderation, generate_reply, tts_cache_base64
 
+# Stripe secret key en Render
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")  # secreto en Render
+STRIPE_PUBLISHABLE_KEY = "pk_live_51NqPxQBOA5mT4t0PEoRVRc0Sj7DugiHvxhozC3BYh0q0hAx1N3HCLJe4xEp3MSuNMA6mQ7fAO4mvtppqLodrtqEn00pgJNQaxz"
+SITE_URL = "https://chat-espiritual.onrender.com"
 
 def create_app():
     app = Flask(__name__, template_folder="templates", static_folder="static")
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///data.db')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.secret_key = os.environ.get('SECRET_KEY', 'dev')
-    CORS(app, origins=[
-        "https://sites.google.com",
-        "https://checkout.stripe.com",
-        "https://api.openai.com",
-    ])
+    CORS(app, origins=["*"])
     db.init_app(app)
 
     @app.route("/")
     def home():
-        return render_template("index.html")
+        return render_template(
+            "index.html",
+            stripe_pub_key=STRIPE_PUBLISHABLE_KEY,
+            site_url=SITE_URL
+        )
 
     @app.route("/chat", methods=["POST"])
     def chat():
@@ -76,10 +79,13 @@ def create_app():
         db.session.commit()
         return jsonify({"ok":True, "amen_count": it.amen_count})
 
+    # Creación de sesión de donación con mínimo de $5
     @app.route("/create-donation-session", methods=["POST"])
     def create_donation_session():
         data = request.json or {}
-        amount = int(data.get("amount", 100))
+        amount = int(data.get("amount", 5))
+        if amount < 5:
+            amount = 5
         try:
             session = stripe.checkout.Session.create(
                 payment_method_types=["card"],
@@ -87,13 +93,13 @@ def create_app():
                 line_items=[{
                     "price_data":{
                         "currency":"usd",
-                        "product_data":{"name":"Donación"},
-                        "unit_amount": amount
+                        "product_data":{"name":"Donación Chat Espiritual"},
+                        "unit_amount": amount * 100
                     },
                     "quantity":1
                 }],
-                success_url="https://chat-espiritual.onrender.com?success=true",
-                cancel_url="https://chat-espiritual.onrender.com?canceled=true"
+                success_url=f"{SITE_URL}?success=true",
+                cancel_url=f"{SITE_URL}?canceled=true"
             )
             return jsonify({"url": session.url})
         except Exception as e:
