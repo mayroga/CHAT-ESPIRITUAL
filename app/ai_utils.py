@@ -1,61 +1,51 @@
-import os, hashlib, base64
-from gtts import gTTS
+import os
 import openai
+from gtts import gTTS
+from io import BytesIO
+import base64
 from langdetect import detect
 
-openai.api_key = os.environ.get("OPENAI_API_KEY")  # secreto en Render
-
-TTS_CACHE_DIR = "/tmp/tts_cache"
-os.makedirs(TTS_CACHE_DIR, exist_ok=True)
-
-SYSTEM_PROMPT = (
-    "Eres un guía espiritual universal cuyo objetivo es ofrecer consuelo, esperanza y orientación "
-    "con lenguaje inclusivo, neutral y sin doctrinas específicas. Responde con empatía y respeto. "
-    "Si detectas señales de riesgo, di un mensaje de apoyo y sugiere buscar ayuda profesional y recursos locales."
-)
+# La clave API de OpenAI se carga desde las variables de entorno de Render.
+openai.api_key = os.environ.get("OPENAI_API_KEY")
 
 def detect_lang(text):
     try:
-        return detect(text)[:2]
+        return detect(text)
     except:
         return "es"
 
 def check_moderation(text):
     try:
-        resp = openai.Moderation.create(input=text)
-        results = resp["results"][0]
-        return {"flagged": results.get("flagged", False), "raw": results}
+        response = openai.moderations.create(input=text)
+        return response.results[0]
     except Exception as e:
-        print("Moderation error:", e)
-        return {"flagged": False, "error": str(e)}
+        print(f"Error en moderación: {e}")
+        return {"flagged": False}
 
-def generate_reply(user_text, language="es"):
+def generate_reply(text, language="es"):
     try:
-        resp = openai.ChatCompletion.create(
-            model="gpt-4o",
-            messages=[
-                {"role":"system", "content": SYSTEM_PROMPT},
-                {"role":"user", "content": user_text}
-            ],
-            max_tokens=300, temperature=0.8
+        messages = [
+            {"role": "system", "content": "Eres un ser espiritual y sabio. Respondes con mensajes de paz, esperanza y sabiduría, como si fueras una entidad divina. Mantén un tono compasivo y reflexivo."},
+            {"role": "user", "content": text}
+        ]
+        
+        response = openai.chat.completions.create(
+            model="gpt-4",
+            messages=messages,
+            temperature=0.7
         )
-        text = resp.choices[0].message.get("content","").strip()
-        return text
+        return response.choices[0].message.content
     except Exception as e:
-        print("OpenAI error:", e)
-        return "Lo siento, no puedo conectar con el guía espiritual ahora."
+        print(f"Error al generar respuesta: {e}")
+        return "Disculpa, no puedo responder en este momento. Por favor, inténtalo de nuevo más tarde."
 
-def tts_cache_base64(text, lang="es"):
-    key = hashlib.sha256((text + "|" + lang).encode("utf-8")).hexdigest()
-    filename = os.path.join(TTS_CACHE_DIR, f"{key}.mp3")
-    if os.path.exists(filename):
-        with open(filename, "rb") as f:
-            return base64.b64encode(f.read()).decode('utf-8')
+def tts_cache_base64(text, language="es"):
     try:
-        tts = gTTS(text=text, lang=lang)
-        tts.save(filename)
-        with open(filename, "rb") as f:
-            return base64.b64encode(f.read()).decode('utf-8')
+        mp3_fp = BytesIO()
+        tts = gTTS(text=text, lang=language)
+        tts.write_to_fp(mp3_fp)
+        mp3_fp.seek(0)
+        return base64.b64encode(mp3_fp.read()).decode('utf-8')
     except Exception as e:
-        print("TTS error:", e)
+        print(f"Error en TTS: {e}")
         return ""
