@@ -1,4 +1,4 @@
-import os, time, stripe
+import os, stripe
 from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
 from .models import db, Message, Intention, User
@@ -20,7 +20,7 @@ def create_app():
 
     @app.route("/")
     def home():
-        return render_template("index.html", stripe_pub_key="pk_live_51NqPxQBOA5mT4t0PEoRVRc0Sj7DugiHvxhozC3BYh0q0hAx1N3HCLJe4xEp3MSuNMA6mQ7fAO4mvtppqLodrtqEn00pgJNQaxz")
+        return render_template("index.html")
 
     @app.route("/chat", methods=["POST"])
     def chat():
@@ -92,27 +92,12 @@ def create_app():
                     },
                     "quantity":1
                 }],
-                success_url=os.environ.get("URL_SITE", "http://localhost:5000") + "?success=true",
-                cancel_url=os.environ.get("URL_SITE", "http://localhost:5000") + "?canceled=true"
+                success_url="https://chat-espiritual.onrender.com?success=true",
+                cancel_url="https://chat-espiritual.onrender.com?canceled=true"
             )
             return jsonify({"url": session.url})
         except Exception as e:
             return jsonify({"error": str(e)}), 500
-
-    @app.route("/stripe-webhook", methods=["POST"])
-    def stripe_webhook():
-        payload = request.data
-        sig_header = request.headers.get("Stripe-Signature")
-        webhook_secret = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
-        event = None
-        try:
-            event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
-        if event['type'] == 'checkout.session.completed':
-            session = event['data']['object']
-            print("Pago completado:", session.get("id"))
-        return jsonify({"status": "success"}), 200
 
     return app
 
