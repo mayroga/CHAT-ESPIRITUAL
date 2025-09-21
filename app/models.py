@@ -1,23 +1,24 @@
+import uuid
 from flask_sqlalchemy import SQLAlchemy
-import time
+from datetime import datetime
 
 db = SQLAlchemy()
 
 class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(120), unique=True, nullable=True)
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    user_id = db.Column(db.String(36), db.ForeignKey('user.id'))
     text = db.Column(db.Text, nullable=False)
-    reply = db.Column(db.Text)
-    language = db.Column(db.String(8))
-    created_at = db.Column(db.Float, default=time.time)
+    reply = db.Column(db.Text, nullable=False)
+    language = db.Column(db.String(10), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Intention(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    user_id = db.Column(db.String(36), db.ForeignKey('user.id'))
     text = db.Column(db.Text, nullable=False)
     amen_count = db.Column(db.Integer, default=0)
-    created_at = db.Column(db.Float, default=time.time)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
