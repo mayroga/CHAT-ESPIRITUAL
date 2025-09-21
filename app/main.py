@@ -5,23 +5,28 @@ from flask_cors import CORS
 from .models import db, Message, Intention, User
 from .ai_utils import detect_lang, check_moderation, generate_reply, tts_cache_base64
 
-# Configuración de Stripe y URL del sitio.
-# Los secretos se cargan desde las variables de entorno de Render.
+# Configuración de Stripe
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
 STRIPE_PUBLISHABLE_KEY = "pk_live_51NqPxQBOA5mT4t0PEoRVRc0Sj7DugiHvxhozC3BYh0q0hAx1N3HCLJe4xEp3MSuNMA6mQ7fAO4mvtppqLodrtqEn00pgJNQaxz"
-SITE_URL = "https://chat-espiritual.onrender.com"
+SITE_URL = os.environ.get("URL_SITE", "https://chat-espiritual.onrender.com")
 
 def create_app():
     app = Flask(__name__, template_folder="templates", static_folder="static")
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
+    
+    # Configuración de la base de datos
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///data.db')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.secret_key = os.environ.get('SECRET_KEY', 'dev')
-    CORS(app, origins=["*"])
+    
+    # CORS
+    CORS(app, origins=[SITE_URL, "https://checkout.stripe.com"])
+    
+    # Inicializar DB
     db.init_app(app)
 
     @app.route("/")
     def home():
-        return render_template("index.html")
+        return render_template("index.html", stripe_pub_key=STRIPE_PUBLISHABLE_KEY, site_url=SITE_URL)
 
     @app.route("/chat", methods=["POST"])
     def chat():
