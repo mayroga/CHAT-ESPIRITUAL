@@ -1,44 +1,60 @@
-import { useState } from "https://cdn.skypack.dev/react";
-import { createRoot } from "https://cdn.skypack.dev/react-dom/client";
-
-export default function ChatComponent({ apiUrl }) {
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
-
-  const sendMessage = async () => {
-    if(!input.trim()) return;
-    const res = await fetch(apiUrl + "/chat", {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({ message: input })
-    });
-    const data = await res.json();
-    setMessages([...messages, { user: input, reply: data.reply }]);
-    setInput("");
-  }
-
-  return {
-    mount(el) {
-      createRoot(el).render(
-        <div className="p-4 border rounded shadow">
-          <div className="h-64 overflow-y-auto mb-2 border p-2">
-            {messages.map((m,i) => (
-              <div key={i} className="mb-2">
-                <div className="font-bold">Tú:</div><div>{m.user}</div>
-                <div className="font-bold text-green-700">Guía:</div><div>{m.reply}</div>
-              </div>
-            ))}
-          </div>
-          <input
-            type="text"
-            className="border p-2 w-full"
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => e.key==="Enter" && sendMessage()}
-            placeholder="Escribe tu mensaje..."
-          />
-        </div>
-      );
+export default class ChatComponent {
+    constructor({ apiUrl }) {
+        this.apiUrl = apiUrl;
     }
-  }
+
+    mount(element) {
+        element.innerHTML = `
+            <div id="chat-container" class="bg-white p-4 rounded-lg shadow-md flex flex-col h-[500px]">
+                <div id="messages" class="flex-grow overflow-y-auto mb-4 p-2 border rounded"></div>
+                <div class="flex">
+                    <input id="chat-input" type="text" placeholder="Escribe tu mensaje..." class="flex-grow border p-2 rounded-l">
+                    <button id="chat-send" class="bg-blue-500 text-white px-4 py-2 rounded-r">Enviar</button>
+                </div>
+            </div>
+        `;
+
+        const messagesContainer = element.querySelector("#messages");
+        const chatInput = element.querySelector("#chat-input");
+        const chatSendBtn = element.querySelector("#chat-send");
+        const audioPlayer = new Audio();
+
+        const sendMessage = async () => {
+            const message = chatInput.value.trim();
+            if (!message) return;
+
+            // Display user message
+            messagesContainer.innerHTML += `<div class="text-right text-gray-700 p-2">${message}</div>`;
+            chatInput.value = "";
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+            try {
+                const res = await fetch(this.apiUrl + "/chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message })
+                });
+                const data = await res.json();
+                
+                // Display AI reply
+                messagesContainer.innerHTML += `<div class="text-left text-gray-500 p-2">Dios: ${data.reply}</div>`;
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+                if (data.audio) {
+                    audioPlayer.src = `data:audio/mp3;base64,${data.audio}`;
+                    audioPlayer.play();
+                }
+
+            } catch (error) {
+                messagesContainer.innerHTML += `<div class="text-left text-red-500 p-2">Error: No se pudo conectar.</div>`;
+            }
+        };
+
+        chatSendBtn.onclick = sendMessage;
+        chatInput.onkeydown = (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        };
+    }
 }
