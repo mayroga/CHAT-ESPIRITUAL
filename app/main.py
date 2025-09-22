@@ -1,13 +1,12 @@
 import os
-import stripe
-from flask import Flask, render_template, request, jsonify
-from flask_cors import CORS
-from .models import db, Message, Intention, User
-from .ai_utils import detect_lang, check_moderation, generate_reply, tts_cache_base64
-from openai import OpenAI
-from gtts import gTTS
 import base64
 from io import BytesIO
+from flask import Flask, render_template, request, jsonify
+from flask_cors import CORS
+from gtts import gTTS
+import openai
+import stripe
+from .models import db, Message, Intention
 
 # Configuración de Stripe
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
@@ -15,7 +14,18 @@ STRIPE_PUBLISHABLE_KEY = os.environ.get("STRIPE_PUBLISHABLE_KEY")
 SITE_URL = os.environ.get("URL_SITE", "https://chat-espiritual.onrender.com")
 
 # Configuración de OpenAI
-client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+openai.api_key = os.environ.get("OPENAI_API_KEY")
+
+
+def tts_cache_base64(text, lang="es"):
+    try:
+        tts = gTTS(text=text, lang=lang)
+        buf = BytesIO()
+        tts.write_to_fp(buf)
+        return base64.b64encode(buf.getvalue()).decode("utf-8")
+    except Exception:
+        return ""
+
 
 def create_app():
     app = Flask(__name__, template_folder="templates", static_folder="static")
@@ -45,32 +55,25 @@ def create_app():
         data = request.json or {}
         user_msg = (data.get("message") or "").strip()
         user_id = data.get("user_id")
+
         if not user_msg:
             return jsonify({"reply": "Escribe algo, por favor.", "audio": ""}), 400
 
         # Detectar idioma y moderación
-        lang = detect_lang(user_msg)
-        mod = check_moderation(user_msg)
-        if mod.get("flagged"):
-            return jsonify({"reply": "Tu mensaje requiere revisión. Si estás en riesgo, busca ayuda local.", "audio": ""}), 200
-
-        # Generar respuesta con IA
-        reply = generate_reply(user_msg, language=lang)
-        if check_moderation(reply).get("flagged"):
-            reply = "Se generó un contenido que requiere revisión. Intenta reformular tu mensaje."
-
+        lang = "es"  # Siempre español para simplificar, puedes usar detect_lang(user_msg) si quieres
         try:
-            response = client.chat.completions.create(
+            response = openai.ChatCompletion.create(
                 model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": "Eres el Embajador de la Unidad Espiritual, un guía inclusivo y universal que promueve paz, amor y respeto sin imponer religión."},
                     {"role": "user", "content": user_msg}
                 ]
             )
-            reply = response.choices[0].message.content
+            reply = response.choices[0].message['content']
         except Exception:
             reply = "No se pudo conectar con el servidor espiritual en este momento."
 
+        # Generar audio
         audio_b64 = tts_cache_base64(reply, lang)
 
         # Guardar en DB
@@ -88,38 +91,24 @@ def create_app():
         data = request.json or {}
         text = (data.get("text") or "").strip()
         user_id = data.get("user_id")
+
         if not text:
             return jsonify({"error": "Texto vacío"}), 400
-        if check_moderation(text).get("flagged"):
-            return jsonify({"error": "Contenido no permitido"}), 400
 
         it = Intention(user_id=user_id, text=text)
         db.session.add(it)
         db.session.commit()
         return jsonify({"ok": True, "id": it.id}), 201
 
-    @app.route("/intentions", methods=["GET"])
-    def get_intentions():
-        items = Intention.query.order_by(Intention.created_at.desc()).limit(100).all()
-        return jsonify([{"id": i.id, "text": i.text, "amen_count": i.amen_count} for i in items]), 200
-
-    @app.route("/intention/<int:int_id>/amen", methods=["POST"])
-    def amen(int_id):
-        it = Intention.query.get_or_404(int_id)
-        it.amen_count += 1
-        db.session.commit()
-        return jsonify({"ok": True, "amen_count": it.amen_count})
-
-    @app.route("/create-donation-session", methods=["POST"])
+    @app.route("/donate", methods=["POST"])
     def create_donation_session():
         data = request.json or {}
         amount = int(data.get("amount", 5))
         if amount < 5:
-            amount = 5
+            amount = 5  # mínimo $5
         try:
             session = stripe.checkout.Session.create(
                 payment_method_types=["card"],
-                mode="payment",
                 line_items=[{
                     "price_data": {
                         "currency": "usd",
@@ -128,17 +117,13 @@ def create_app():
                     },
                     "quantity": 1
                 }],
+                mode="payment",
                 success_url=f"{SITE_URL}?success=true",
                 cancel_url=f"{SITE_URL}?canceled=true"
             )
             return jsonify({"url": session.url})
         except Exception as e:
-            return jsonify({"error": str(e)}), 500
+            print("Stripe error:", e)
+            return jsonify({"error": "No se pudo crear la sesión de pago"}), 500
 
     return app
-
-if __name__ == "__main__":
-    app = create_app()
-    with app.app_context():
-        db.create_all()
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
