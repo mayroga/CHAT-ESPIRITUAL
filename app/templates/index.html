@@ -1,48 +1,81 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Embajador de la Unidad Espiritual</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://js.stripe.com/v3/"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Embajador de la Unidad Espiritual</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://js.stripe.com/v3/"></script>
 </head>
 <body class="bg-gray-100 p-4">
 
-<div class="max-w-3xl mx-auto">
-  <h1 class="text-3xl font-bold mb-4 text-center">Embajador de la Unidad Espiritual</h1>
+  <div class="max-w-3xl mx-auto">
+    <h1 class="text-3xl font-bold mb-4 text-center">Embajador de la Unidad Espiritual</h1>
 
-  <div id="chat-root" class="mb-6"></div>
+    <!-- Chat -->
+    <div class="mb-6 border rounded p-4 bg-white">
+      <h2 class="text-xl font-bold mb-2">Habla con el Embajador</h2>
+      <div id="chat-box" class="h-64 overflow-y-auto border p-2 mb-2 bg-gray-50"></div>
+      <div class="flex">
+        <input id="chat-input" class="border flex-grow p-2 mr-2" placeholder="Escribe tu mensaje...">
+        <button id="send-btn" class="bg-blue-500 text-white px-4 py-2 rounded">Enviar</button>
+      </div>
+    </div>
 
-  <div class="mb-6">
-    <h2 class="text-xl font-bold mb-2">Comunidad de Intenciones</h2>
-    <textarea id="intention-input" class="border p-2 w-full mb-2" placeholder="Escribe tu intención..."></textarea>
-    <button id="send-intention" class="bg-blue-500 text-white px-4 py-2 rounded">Enviar intención</button>
-    <div id="intentions-list" class="mt-4"></div>
+    <!-- Intenciones -->
+    <div class="mb-6 border rounded p-4 bg-white">
+      <h2 class="text-xl font-bold mb-2">Comunidad de Intenciones</h2>
+      <textarea id="intention-input" class="border p-2 w-full mb-2" placeholder="Escribe tu intención..."></textarea>
+      <button id="send-intention" class="bg-blue-500 text-white px-4 py-2 rounded">Enviar intención</button>
+      <div id="intentions-list" class="mt-4"></div>
+    </div>
+
+    <!-- Donaciones -->
+    <div class="mb-6 border rounded p-4 bg-white">
+      <h2 class="text-xl font-bold mb-2">Apoya el proyecto</h2>
+      <p class="text-sm mb-2">Tu donación ayuda a mantener el servicio y apoyar a la comunidad.</p>
+      <input type="number" id="donation-amount" class="border p-2 w-full mb-2" placeholder="Cantidad en USD (mínimo $5)">
+      <button id="donate-btn" class="bg-green-500 text-white px-4 py-2 rounded">Donar</button>
+    </div>
   </div>
 
-  <div class="mb-6">
-    <h2 class="text-xl font-bold mb-2">Apoya el proyecto</h2>
-    <p class="text-sm mb-2">Tu donación ayuda a pagar salarios, mantener el servicio y permitir que otros puedan usarlo.</p>
-    <input type="number" id="donation-amount" class="border p-2 w-full mb-2" placeholder="Cantidad en USD (mínimo $5)">
-    <button id="donate-btn" class="bg-green-500 text-white px-4 py-2 rounded">Donar</button>
-  </div>
-</div>
-
-<script type="module">
-import ChatComponent from './static/js/ChatComponent.jsx';
-
-const apiUrl = 'https://chat-espiritual.onrender.com';
+<script>
+const apiUrl = window.location.origin;
 
 // Chat
-const root = document.getElementById("chat-root");
-const chatEl = document.createElement("div");
-root.appendChild(chatEl);
-new ChatComponent({ apiUrl }).mount(chatEl);
+const chatBox = document.getElementById("chat-box");
+const chatInput = document.getElementById("chat-input");
+const sendBtn = document.getElementById("send-btn");
+
+function addMessage(text, sender) {
+  const div = document.createElement("div");
+  div.className = sender === "user" ? "text-right mb-2" : "text-left mb-2";
+  div.innerHTML = `<span class="px-2 py-1 rounded ${sender==="user"?"bg-blue-200":"bg-gray-200"}">${text}</span>`;
+  chatBox.appendChild(div);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+sendBtn.onclick = async () => {
+  const text = chatInput.value.trim();
+  if (!text) return;
+  addMessage(text, "user");
+  chatInput.value = "";
+  const res = await fetch(apiUrl + "/chat", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({ message: text })
+  });
+  const data = await res.json();
+  addMessage(data.reply, "bot");
+  if (data.audio) {
+    const audio = new Audio("data:audio/mp3;base64," + data.audio);
+    audio.play();
+  }
+};
 
 // Intenciones
 const intentionInput = document.getElementById("intention-input");
-const sendBtn = document.getElementById("send-intention");
+const sendIntBtn = document.getElementById("send-intention");
 const intentionsList = document.getElementById("intentions-list");
 
 async function loadIntentions() {
@@ -58,11 +91,11 @@ async function loadIntentions() {
 window.sendAmen = async (id) => {
   await fetch(apiUrl + `/intention/${id}/amen`, { method:"POST" });
   loadIntentions();
-}
+};
 
-sendBtn.onclick = async () => {
+sendIntBtn.onclick = async () => {
   const text = intentionInput.value.trim();
-  if(!text) return;
+  if (!text) return;
   await fetch(apiUrl + "/intention", {
     method:"POST",
     headers:{"Content-Type":"application/json"},
@@ -70,7 +103,7 @@ sendBtn.onclick = async () => {
   });
   intentionInput.value = "";
   loadIntentions();
-}
+};
 
 loadIntentions();
 
@@ -86,7 +119,8 @@ donateBtn.onclick = async () => {
   });
   const data = await res.json();
   if(data.url) window.location.href = data.url;
-}
+};
 </script>
+
 </body>
 </html>
