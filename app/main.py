@@ -36,6 +36,10 @@ def create_app():
     CORS(app, origins=[SITE_URL, "https://checkout.stripe.com"])
     db.init_app(app)
 
+    # ✅ Crear tablas si no existen
+    with app.app_context():
+        db.create_all()
+
     @app.route("/")
     def home():
         return render_template("index.html")
@@ -123,6 +127,4 @@ def create_app():
 
 if __name__ == "__main__":
     app = create_app()
-    with app.app_context():
-        db.create_all()
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
