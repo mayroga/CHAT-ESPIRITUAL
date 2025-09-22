@@ -8,15 +8,21 @@ import openai
 import stripe
 from .models import db, Message, Intention
 
+# -----------------------------
 # Configuración de Stripe
+# -----------------------------
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
 STRIPE_PUBLISHABLE_KEY = os.environ.get("STRIPE_PUBLISHABLE_KEY")
 SITE_URL = os.environ.get("URL_SITE", "https://chat-espiritual.onrender.com")
 
+# -----------------------------
 # Configuración de OpenAI
+# -----------------------------
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 
-
+# -----------------------------
+# Función para convertir texto a audio en base64
+# -----------------------------
 def tts_cache_base64(text, lang="es"):
     try:
         tts = gTTS(text=text, lang=lang)
@@ -26,7 +32,9 @@ def tts_cache_base64(text, lang="es"):
     except Exception:
         return ""
 
-
+# -----------------------------
+# Crear la app de Flask
+# -----------------------------
 def create_app():
     app = Flask(__name__, template_folder="templates", static_folder="static")
 
@@ -35,12 +43,21 @@ def create_app():
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.secret_key = os.environ.get('SECRET_KEY', 'dev')
 
-    # CORS
+    # Configuración CORS
     CORS(app, origins=[SITE_URL, "https://checkout.stripe.com"])
 
     # Inicializar DB
     db.init_app(app)
 
+    # -----------------------------
+    # Inicializar tablas si no existen
+    # -----------------------------
+    with app.app_context():
+        db.create_all()
+
+    # -----------------------------
+    # Rutas de la app
+    # -----------------------------
     @app.route("/")
     def home():
         return render_template(
@@ -60,7 +77,7 @@ def create_app():
             return jsonify({"reply": "Escribe algo, por favor.", "audio": ""}), 400
 
         # Detectar idioma y moderación
-        lang = "es"  # Siempre español para simplificar, puedes usar detect_lang(user_msg) si quieres
+        lang = "es"  # Siempre español
         try:
             response = openai.ChatCompletion.create(
                 model="gpt-4o-mini",
@@ -100,7 +117,10 @@ def create_app():
         db.session.commit()
         return jsonify({"ok": True, "id": it.id}), 201
 
-    @app.route("/donate", methods=["POST"])
+    # -----------------------------
+    # Ruta Stripe lista para Render
+    # -----------------------------
+    @app.route("/create-donation-session", methods=["POST"])
     def create_donation_session():
         data = request.json or {}
         amount = int(data.get("amount", 5))
