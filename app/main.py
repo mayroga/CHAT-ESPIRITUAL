@@ -7,7 +7,7 @@ from .ai_utils import detect_lang, check_moderation, generate_reply, tts_cache_b
 
 # Configuración de Stripe
 stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
-STRIPE_PUBLISHABLE_KEY = "pk_live_51NqPxQBOA5mT4t0PEoRVRc0Sj7DugiHvxhozC3BYh0q0hAx1N3HCLJe4xEp3MSuNMA6mQ7fAO4mvtppqLodrtqEn00pgJNQaxz"
+STRIPE_PUBLISHABLE_KEY = os.environ.get("STRIPE_PUBLISHABLE_KEY")
 SITE_URL = os.environ.get("URL_SITE", "https://chat-espiritual.onrender.com")
 
 def create_app():
@@ -26,7 +26,10 @@ def create_app():
 
     @app.route("/")
     def home():
-        return render_template("index.html", stripe_pub_key=STRIPE_PUBLISHABLE_KEY, site_url=SITE_URL)
+        return render_template("index.html", 
+                               stripe_pub_key=STRIPE_PUBLISHABLE_KEY, 
+                               site_url=SITE_URL, 
+                               app_name="Embajador de la Unidad Espiritual")
 
     @app.route("/chat", methods=["POST"])
     def chat():
@@ -98,7 +101,7 @@ def create_app():
                 line_items=[{
                     "price_data": {
                         "currency": "usd",
-                        "product_data": {"name": "Donación Chat Espiritual"},
+                        "product_data": {"name": "Donación - Embajador de la Unidad Espiritual"},
                         "unit_amount": amount * 100
                     },
                     "quantity": 1
