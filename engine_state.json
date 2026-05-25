@@ -1,0 +1,19 @@
+{
+  "user_state": {
+    "session_active": false,
+    "current_session_id": null,
+    "progress_index": 0
+  },
+
+  "emotional_tracking": {
+    "loneliness_score": 0,
+    "anxiety_level": 0,
+    "engagement_level": 0
+  },
+
+  "system_state": {
+    "mode": "calm",
+    "voice_enabled": true,
+    "auto_end_minutes": 30
+  }
+}
