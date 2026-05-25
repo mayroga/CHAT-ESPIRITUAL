@@ -1,125 +1,421 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Embajador de la Unidad Espiritual</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://js.stripe.com/v3/"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Christian AI Devotional</title>
+<style>
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:Arial,Helvetica,sans-serif;
+}
+
+body{
+  background:#050505;
+  color:#f1f1f1;
+  overflow:hidden;
+}
+
+#bg{
+  position:fixed;
+  inset:0;
+  background:
+    radial-gradient(circle at center,#13213a 0%,#050505 70%);
+  z-index:-2;
+}
+
+#particles{
+  position:fixed;
+  inset:0;
+  z-index:-1;
+}
+
+.container{
+  width:100%;
+  height:100vh;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  text-align:center;
+  padding:25px;
+}
+
+.logo{
+  font-size:42px;
+  letter-spacing:8px;
+  margin-bottom:10px;
+  color:#d6b36a;
+}
+
+.subtitle{
+  font-size:14px;
+  opacity:.7;
+  margin-bottom:40px;
+}
+
+.circle{
+  width:220px;
+  height:220px;
+  border-radius:50%;
+  border:2px solid rgba(214,179,106,.4);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  animation:breathe 8s infinite ease-in-out;
+  box-shadow:0 0 40px rgba(214,179,106,.15);
+}
+
+.circleText{
+  font-size:26px;
+  letter-spacing:4px;
+}
+
+@keyframes breathe{
+  0%{
+    transform:scale(.9);
+    opacity:.7;
+  }
+  50%{
+    transform:scale(1.08);
+    opacity:1;
+  }
+  100%{
+    transform:scale(.9);
+    opacity:.7;
+  }
+}
+
+#message{
+  margin-top:50px;
+  max-width:700px;
+  line-height:1.8;
+  font-size:22px;
+  min-height:120px;
+  opacity:.95;
+}
+
+.controls{
+  position:fixed;
+  bottom:40px;
+  display:flex;
+  gap:15px;
+}
+
+button{
+  background:#111;
+  border:1px solid rgba(214,179,106,.4);
+  color:#fff;
+  padding:14px 24px;
+  border-radius:30px;
+  cursor:pointer;
+  transition:.3s;
+  font-size:15px;
+}
+
+button:hover{
+  background:#1f1f1f;
+  transform:scale(1.05);
+}
+
+#timer{
+  position:fixed;
+  top:20px;
+  right:20px;
+  color:#d6b36a;
+  font-size:18px;
+  letter-spacing:2px;
+  opacity:.8;
+}
+
+#responseBox{
+  margin-top:30px;
+  width:100%;
+  max-width:600px;
+  display:none;
+}
+
+textarea{
+  width:100%;
+  height:120px;
+  background:#0d0d0d;
+  border:1px solid rgba(214,179,106,.3);
+  color:white;
+  padding:15px;
+  border-radius:14px;
+  resize:none;
+  font-size:16px;
+}
+
+.fade{
+  animation:fadeIn 2s;
+}
+
+@keyframes fadeIn{
+  from{opacity:0; transform:translateY(10px)}
+  to{opacity:1; transform:translateY(0)}
+}
+</style>
 </head>
-<body class="bg-gray-100 p-4">
+<body>
 
-  <div class="max-w-3xl mx-auto">
-    <h1 class="text-3xl font-bold mb-4 text-center">Embajador de la Unidad Espiritual</h1>
+<div id="bg"></div>
+<canvas id="particles"></canvas>
 
-    <!-- Chat -->
-    <div class="mb-6 border rounded p-4 bg-white">
-      <h2 class="text-xl font-bold mb-2">Habla con el Embajador</h2>
-      <div id="chat-box" class="h-64 overflow-y-auto border p-2 mb-2 bg-gray-50"></div>
-      <div class="flex">
-        <input id="chat-input" class="border flex-grow p-2 mr-2" placeholder="Escribe tu mensaje...">
-        <button id="send-btn" class="bg-blue-500 text-white px-4 py-2 rounded">Enviar</button>
-      </div>
-    </div>
+<div id="timer">30:00</div>
 
-    <!-- Intenciones -->
-    <div class="mb-6 border rounded p-4 bg-white">
-      <h2 class="text-xl font-bold mb-2">Comunidad de Intenciones</h2>
-      <textarea id="intention-input" class="border p-2 w-full mb-2" placeholder="Escribe tu intención..."></textarea>
-      <button id="send-intention" class="bg-blue-500 text-white px-4 py-2 rounded">Enviar intención</button>
-      <div id="intentions-list" class="mt-4"></div>
-    </div>
+<div class="container">
 
-    <!-- Donaciones -->
-    <div class="mb-6 border rounded p-4 bg-white">
-      <h2 class="text-xl font-bold mb-2">Apoya el proyecto</h2>
-      <p class="text-sm mb-2">Tu donación ayuda a mantener el servicio y apoyar a la comunidad.</p>
-      <input type="number" id="donation-amount" class="border p-2 w-full mb-2" placeholder="Cantidad en USD (mínimo $5)">
-      <button id="donate-btn" class="bg-green-500 text-white px-4 py-2 rounded">Donar</button>
-    </div>
-  </div>
+<div class="logo">EXPERIENCE</div>
+<div class="subtitle">Christian AI Devotional Experience</div>
+
+<div class="circle">
+  <div class="circleText" id="breathText">BREATHE</div>
+</div>
+
+<div id="message" class="fade">
+Welcome.<br>
+You are not here by accident.
+</div>
+
+<div id="responseBox">
+<textarea placeholder="Write what is on your heart..."></textarea>
+</div>
+
+<div id="donationPanel" style="margin-top:40px;width:100%;max-width:500px;background:rgba(255,255,255,.03);border:1px solid rgba(214,179,106,.25);padding:20px;border-radius:18px;backdrop-filter:blur(4px);">
+<h2 style="font-size:24px;margin-bottom:12px;color:#d6b36a;">Support The Experience</h2>
+<p style="font-size:14px;line-height:1.7;opacity:.8;margin-bottom:18px;">
+Your support helps keep EXPERIENCE WITH Christian AI Devotional available for people who feel alone,
+anxious, spiritually exhausted, or disconnected.
+</p>
+
+<input
+  type="number"
+  id="donation-amount"
+  placeholder="Amount in USD (minimum $5)"
+  style="width:100%;padding:14px;background:#0d0d0d;border:1px solid rgba(214,179,106,.3);border-radius:12px;color:white;font-size:16px;margin-bottom:14px;"
+>
+
+<button
+  id="donate-btn"
+  onclick="donateNow()"
+  style="width:100%;background:#1d6f42;border:none;padding:14px;border-radius:12px;color:white;font-size:16px;cursor:pointer;transition:.3s;"
+>
+Donate
+</button>
+</div>
+
+<div class="controls">
+  <button onclick="startSession()">START SESSION</button>
+  <button onclick="nextMessage()">NEXT</button>
+  <button onclick="stopSession()">END</button>
+</div>
+
+</div>
 
 <script>
-const apiUrl = window.location.origin;
+const messages = [
+  "Maybe today was heavier than you admit.",
+  "Maybe you smiled all day while carrying pain alone.",
+  "God still sees you.",
+  "You do not need to perform here.",
+  "You can simply breathe.",
+  "A lot of people believe in God... but still feel alone.",
+  "Some people stopped trusting churches.",
+  "Some people are too anxious to walk into one.",
+  "Some people work so much that they forgot how to rest.",
+  "This space is for them too.",
+  "Fear does not make you weak.",
+  "Even Peter was afraid.",
+  "Even David cried.",
+  "Even Elijah wanted to give up.",
+  "You are not the only one fighting silently.",
+  "Close your eyes for a moment.",
+  "Breathe in slowly.",
+  "You are still alive.",
+  "And God is not done with you.",
+  "What pain have you been hiding?",
+  "What are you tired of carrying alone?",
+  "You can write it here.",
+  "This does not replace faith.",
+  "This is a place to pause.",
+  "To reflect.",
+  "To reconnect.",
+  "Not everybody can reach a church.",
+  "But everybody needs hope.",
+  "Go back into the world differently tonight.",
+  "Session complete. Peace be with you."
+];
 
-// Chat
-const chatBox = document.getElementById("chat-box");
-const chatInput = document.getElementById("chat-input");
-const sendBtn = document.getElementById("send-btn");
+let current = 0;
+let sessionStarted = false;
+let timer;
+let totalSeconds = 1800;
 
-function addMessage(text, sender) {
-  const div = document.createElement("div");
-  div.className = sender === "user" ? "text-right mb-2" : "text-left mb-2";
-  div.innerHTML = `<span class="px-2 py-1 rounded ${sender==="user"?"bg-blue-200":"bg-gray-200"}">${text}</span>`;
-  chatBox.appendChild(div);
-  chatBox.scrollTop = chatBox.scrollHeight;
+const messageEl = document.getElementById('message');
+const breathText = document.getElementById('breathText');
+const responseBox = document.getElementById('responseBox');
+
+function speak(text){
+  window.speechSynthesis.cancel();
+
+  const speech = new SpeechSynthesisUtterance(text);
+  speech.rate = 0.9;
+  speech.pitch = 0.9;
+  speech.volume = 1;
+
+  const voices = window.speechSynthesis.getVoices();
+
+  const voice = voices.find(v =>
+    v.name.toLowerCase().includes('david') ||
+    v.name.toLowerCase().includes('mark') ||
+    v.name.toLowerCase().includes('english')
+  );
+
+  if(voice) speech.voice = voice;
+
+  window.speechSynthesis.speak(speech);
 }
 
-sendBtn.onclick = async () => {
-  const text = chatInput.value.trim();
-  if (!text) return;
-  addMessage(text, "user");
-  chatInput.value = "";
-  const res = await fetch(apiUrl + "/chat", {
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({ message: text })
-  });
-  const data = await res.json();
-  addMessage(data.reply, "bot");
-  if (data.audio) {
-    const audio = new Audio("data:audio/mp3;base64," + data.audio);
-    audio.play();
+function startSession(){
+  if(sessionStarted) return;
+
+  sessionStarted = true;
+
+  speak(messages[current]);
+
+  timer = setInterval(() => {
+    totalSeconds--;
+
+    const minutes = Math.floor(totalSeconds / 60)
+      .toString()
+      .padStart(2,'0');
+
+    const seconds = (totalSeconds % 60)
+      .toString()
+      .padStart(2,'0');
+
+    document.getElementById('timer').innerText = `${minutes}:${seconds}`;
+
+    if(totalSeconds <= 0){
+      endAutomatically();
+    }
+  },1000);
+}
+
+function nextMessage(){
+  if(!sessionStarted) return;
+
+  current++;
+
+  if(current >= messages.length){
+    stopSession();
+    return;
   }
-};
 
-// Intenciones
-const intentionInput = document.getElementById("intention-input");
-const sendIntBtn = document.getElementById("send-intention");
-const intentionsList = document.getElementById("intentions-list");
+  messageEl.classList.remove('fade');
+  void messageEl.offsetWidth;
+  messageEl.classList.add('fade');
 
-async function loadIntentions() {
-  const res = await fetch(apiUrl + "/intentions");
-  const data = await res.json();
-  intentionsList.innerHTML = data.map(i => `
-    <div class="p-2 border-b flex justify-between items-center">
-      <span>${i.text} (${i.amen_count} 🙏)</span>
-      <button onclick="sendAmen(${i.id})" class="bg-yellow-500 px-2 py-1 rounded text-white">Amén</button>
-    </div>`).join("");
+  messageEl.innerHTML = messages[current];
+
+  speak(messages[current]);
+
+  if(
+    messages[current].includes('What') ||
+    messages[current].includes('write')
+  ){
+    responseBox.style.display = 'block';
+  }
 }
 
-window.sendAmen = async (id) => {
-  await fetch(apiUrl + `/intention/${id}/amen`, { method:"POST" });
-  loadIntentions();
-};
+function stopSession(){
+  clearInterval(timer);
+  window.speechSynthesis.cancel();
 
-sendIntBtn.onclick = async () => {
-  const text = intentionInput.value.trim();
-  if (!text) return;
-  await fetch(apiUrl + "/intention", {
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({ text })
+  messageEl.innerHTML = `
+  Session ended.<br><br>
+  Remember:<br>
+  You are not fighting alone.
+  `;
+
+  speak('Session ended. You are not fighting alone.');
+}
+
+function endAutomatically(){
+  clearInterval(timer);
+
+  window.speechSynthesis.cancel();
+
+  messageEl.innerHTML = `
+  Time completed.<br><br>
+  Go back into the world differently tonight.<br><br>
+  Peace be with you.
+  `;
+
+  speak('Time completed. Go back into the world differently tonight. Peace be with you.');
+}
+
+setInterval(() => {
+  breathText.innerText = breathText.innerText === 'BREATHE'
+    ? 'RELEASE'
+    : 'BREATHE';
+},4000);
+
+const canvas = document.getElementById('particles');
+const ctx = canvas.getContext('2d');
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+const particles = [];
+
+for(let i=0;i<80;i++){
+  particles.push({
+    x:Math.random()*canvas.width,
+    y:Math.random()*canvas.height,
+    r:Math.random()*2,
+    d:Math.random()*1
   });
-  intentionInput.value = "";
-  loadIntentions();
-};
+}
 
-loadIntentions();
+function drawParticles(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
 
-// Donaciones
-const donateBtn = document.getElementById("donate-btn");
-donateBtn.onclick = async () => {
-  let amount = parseInt(document.getElementById("donation-amount").value);
-  if(!amount || amount < 5) amount = 5;
-  const res = await fetch(apiUrl + "/create-donation-session", {
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({ amount })
+  ctx.fillStyle = 'rgba(214,179,106,.25)';
+
+  particles.forEach(p => {
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+    ctx.fill();
+
+    p.y += p.d;
+
+    if(p.y > canvas.height){
+      p.y = 0;
+      p.x = Math.random()*canvas.width;
+    }
   });
-  const data = await res.json();
-  if(data.url) window.location.href = data.url;
-};
+
+  requestAnimationFrame(drawParticles);
+}
+
+drawParticles();
+
+function donateNow(){
+  const amount = Number(document.getElementById('donation-amount').value);
+
+  if(!amount || amount < 5){
+    alert('Minimum donation is $5');
+    return;
+  }
+
+  alert(`Thank you for supporting MAYKAMI with $${amount}.`);
+
+  // Future Stripe or PayPal integration here
+}
 </script>
 
 </body>
