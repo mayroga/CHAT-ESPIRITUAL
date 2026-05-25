@@ -1,0 +1,43 @@
+{
+  "sessions": [
+    {
+      "id": "s001",
+      "title": "When You Feel Alone",
+      "duration": 30,
+      "theme": "loneliness",
+      "script": [
+        "Maybe today you spoke to no one who truly understood you.",
+        "But you are still here.",
+        "God still sees what others ignore.",
+        "You don't need to perform here.",
+        "You are allowed to breathe."
+      ]
+    },
+    {
+      "id": "s002",
+      "title": "Anxiety and Rest",
+      "duration": 25,
+      "theme": "anxiety",
+      "script": [
+        "Your mind has been running too fast.",
+        "Even your thoughts feel heavy.",
+        "But you are safe in this moment.",
+        "Rest is not weakness.",
+        "Rest is restoration."
+      ]
+    },
+    {
+      "id": "s003",
+      "title": "Faith Without Church Walls",
+      "duration": 30,
+      "theme": "faith",
+      "script": [
+        "Not everyone can sit inside a church building.",
+        "But faith does not depend on walls.",
+        "God is not limited by location.",
+        "This is a moment of reflection.",
+        "Not a replacement. A pause."
+      ]
+    }
+  ]
+}
